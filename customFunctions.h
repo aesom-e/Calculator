@@ -141,18 +141,96 @@ double getArgumentValue(function functionIn, double* arguments, char argumentNam
 void runFunction(tokenArray* array, function functionIn, double* arguments) {
     *array = functionIn.math;
 
+    // Set the arguments values correctly within array
     int i;
     for(i=0;i<array->length;i++) {
         if(array->data[i].type == OTHER) {
+            // Check that the character is a valid argument
+            if(!strchr(functionIn.arguments, (char)array->data[i].value)) continue;
             array->data[i].type = NUMBER;
             array->data[i].value = getArgumentValue(functionIn, arguments, (char)array->data[i].value);
         }
     }
+
+    // Expand functions to their full definition
+    int step = 0, j, functionStart;
+    char name[32] = {0}, nameLen = 0, funcArgsLen = 0;
+    double funcArgs[16];
+
+    for(i=0;i<array->length;i++) {
+        switch(step) {
+            case 0:
+                if(array->data[i].type == OTHER) {
+                    step++;
+                    // Get function name
+                    while(i < array->length && array->data[i].type == OTHER)
+                        name[nameLen++] = (char)array->data[i++].value;
+
+                    functionStart = --i;
+                }
+                else step = 0;
+                continue;
+            case 1:
+                if(array->data[i].type == BRACKET
+                && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
+                else step = 0;
+                continue;
+            case 2:
+                if(array->data[i].type == NUMBER) step++;
+                else step = 0;
+                funcArgs[funcArgsLen++] = array->data[i].value;
+                continue;
+            case 3:
+                if(array->data[i].type == BRACKET
+                && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
+                else if(array->data[i].type != NUMBER) step = 0;
+                else funcArgs[funcArgsLen++] = array->data[i].value;
+                continue;
+            case 4:
+                for(j=0;j<functionList->len;j++) {
+                    if(strncmp(functionList->functions[j].name, name, nameLen) == 0) {
+                        // Function found
+
+                        tokenArray tempArray = {0};
+                        runFunction(&tempArray, functionList->functions[j], arguments);
+
+                        // Insert tempArray into array
+                        shiftLeft(array, functionStart, i-functionStart-2);
+
+                        // Add opening and closing brackets to the return of the function
+                        array->data[functionStart] = (token){
+                                0,
+                                (functionStart == 0) ? 1 : array->data[functionStart-1].bracketDepth+1,
+                                BRACKET
+                        };
+
+                        array->data[functionStart+1] = (token){
+                                0,
+                                array->data[functionStart].bracketDepth-1,
+                                BRACKET
+                        };
+
+                        shiftRight(array, functionStart+1, tempArray.length);
+                        // j is unused at this point, so we can reuse it to save memory
+                        for(j=0;j<tempArray.length;j++) {
+                            array->data[functionStart+1+j] = tempArray.data[j];
+                            // Set the bracket depth correctly
+                            array->data[functionStart+1+j].bracketDepth += array->data[functionStart].bracketDepth;
+                        }
+
+                        step = 0;
+                        break;
+                    }
+                }
+                continue;
+        }
+    }
+    // Never nesters are crying at this code
 }
 
 // Returns 1 for no error, 0 for an error
 int checkForFunctionCall(tokenArray* array) {
-    int i = 0, j, k, functionStart;
+    int i = 0, j, functionStart;
 
     while(i < array->length) {
         if(array->data[i].type == OTHER) {
@@ -209,10 +287,29 @@ int checkForFunctionCall(tokenArray* array) {
                     runFunction(&tempArray, functionList->functions[j], arguments);
 
                     // Insert the functions contents back into the tokenArray
-                    shiftLeft(array, functionStart, i-functionStart);
+                    shiftLeft(array, functionStart, i-functionStart-2);
+
+                    // Add opening and closing brackets to the return of the function
+                    array->data[functionStart] = (token){
+                            0,
+                            (functionStart == 0) ? 1 : array->data[functionStart-1].bracketDepth+1,
+                            BRACKET
+                    };
+
+                    array->data[functionStart+1] = (token){
+                            0,
+                            array->data[functionStart].bracketDepth-1,
+                            BRACKET
+                    };
+
                     shiftRight(array, functionStart, tempArray.length);
 
-                    for(k=0;k<tempArray.length;k++) array->data[functionStart+k] = tempArray.data[k];
+                    // j is unused at this point, so we can reuse it to save memory
+                    for(j=0;j<tempArray.length;j++) {
+                        array->data[functionStart+1+j] = tempArray.data[j];
+                        // Set the bracket depth correctly
+                        array->data[functionStart+1+j].bracketDepth += array->data[functionStart].bracketDepth;
+                    }
                     i = functionStart;
                     break;
                 }
