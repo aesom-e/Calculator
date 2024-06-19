@@ -6,7 +6,7 @@
 
 char* takeInput() {
     char* ret = malloc(MAXLENGTH);
-    printf("$%c", -1);
+    printf("$%c", -1); // -1 to print a non-breaking space
     fgets(ret, MAXLENGTH-1, stdin);
     return ret;
 }
