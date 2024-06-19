@@ -98,7 +98,7 @@ double solve(tokenArray* array) {
                 continue;
             case 3:
                 if(array->data[i].type == BRACKET
-                   && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
+                && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
                 continue;
             case 4:
                 if(array->data[i].type == OPERATION
