@@ -10,6 +10,9 @@
 double ans = 0;
 
 tokenArray lex(char* line) {
+
+    if(strcmp(line, "exit\n") == 0) exit(0);
+
     tokenArray ret = {0};
     int len = (int)strlen(line), i, bracketIndex = 0;
 
@@ -104,6 +107,10 @@ tokenArray lex(char* line) {
             i += 4;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = GRAPH;
+        } else if(strncmp(&line[i], "describe", 8) == 0) {
+            i += 7;
+            ret.data[ret.length].type = FUNCTION;
+            ret.data[ret.length].value = DESCRIBE;
         } else {
             ret.data[ret.length].type = OTHER;
             ret.data[ret.length].value = line[i];

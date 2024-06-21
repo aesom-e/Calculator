@@ -163,6 +163,30 @@ double solve(tokenArray* array) {
             }
     }
 
+    // Check for a describe call
+    if(array->data[0].type == FUNCTION && array->data[0].value == DESCRIBE) {
+        noPrint = 1;
+        shiftLeft(array, 0, 1);
+
+        char name[32] = {0}, nameLen = 0;
+        for(i=0;i<array->length;i++) name[nameLen++] = (char)array->data[i].value;
+
+        for(i=0;i<functionList->len;i++) {
+            if(strncmp(name, functionList->functions[i].name, nameLen) == 0) {
+                printFunction(functionList->functions[i]);
+                printf("= ");
+                printArray(functionList->functions[i].math);
+
+                return 1;
+            }
+        }
+
+        printf("Error: Function %s not found", name);
+
+        return 0;
+    }
+
+    // Check for function calls, if an error occurs, return 0
     if(!checkForFunctionCall(array)) return 0;
 
     // Handle cases where the user wants to add to the previous answer
@@ -234,6 +258,7 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index+2].value *= -1;
                     shiftLeft(array, index+1, 1);
+                    printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -248,6 +273,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }
@@ -263,6 +289,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }
@@ -278,6 +305,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }
@@ -293,6 +321,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }
@@ -310,6 +339,7 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index].value *= array->data[index+1].value;
                     shiftLeft(array, index+1, 1);
+                    printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -325,6 +355,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }
@@ -341,6 +372,7 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
+                    printFullExpression(array);
                     break;
                 }
             }

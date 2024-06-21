@@ -10,6 +10,7 @@
 
 unsigned char inputError = 0;
 char errorMessage[256] = {0};
+unsigned char printFull = 0;
 
 typedef enum {
     NONE,
@@ -38,7 +39,8 @@ typedef enum {
     TANGENT,
     LOGARITHM,
     NATURALLOG,
-    GRAPH
+    GRAPH,
+    DESCRIBE
 } functionType;
 
 typedef struct {
@@ -101,6 +103,115 @@ void shiftRight(tokenArray* array, int index, int amount) {
     for(i=array->length-1;i>=index;i--) array->data[i + amount] = array->data[i];
 
     array->length += amount;
+}
+
+void printToken(tokenArray in, int index) {
+    switch(in.data[index].type) {
+        case NONE: break;
+        case BRACKET:
+            // The line below will be 1 if the bracket being checked is open, 0 if not
+            // The line with the two printf statements checks against that and if the first line is 1 prints "(" else ")"
+            ((index == 0) ? (in.data[index].bracketDepth > 0) : (in.data[index].bracketDepth > in.data[index-1].bracketDepth))
+            ? printf("(") : printf(")");
+            break;
+        case NUMBER:
+            // Check whether to wrap the number in brackets
+            if(index != 0) if(in.data[index-1].type == NUMBER) printf("(");
+
+            // Check if the value is an integer, then print it as such; if not, print normally
+            (((long long)in.data[index].value) == in.data[index].value) ? printf("%lld", (long long)in.data[index].value)
+                                                                        : printf("%lf", in.data[index].value);
+
+            // Check whether to wrap the number in brackets
+            if(index != 0) { if(in.data[index-1].type == NUMBER) printf(")");
+                else if(index + 1 < in.length && in.data[index+1].type == NUMBER) printf(" "); }
+
+            break;
+        case OPERATION:
+            // Check specifically for the case where we may be looking at the '-' in (-4)
+            /* To break this down, as it is very convoluted and hard to read at first, it first checks if index > 1
+               If so, skip everything else. If not, check if there was an opening bracket immediately before the token,
+               the token is a subtract token, and there is either a number or variable immediately after.
+               If that check passes, we then print '-' and break by sending a 1 to the if making the statement if(1)
+               breaking out of the switch statement. If not, we don't print anything and send a 0 to the if,
+               so we continue execution.
+
+               This can be more easily visualized by breaking it down into the much less visually appealing,
+               but easier to understand statement below:
+               if(index > 1) {
+                   if((in.data[index-1].type == BRACKET && in.data[index-1].bracketDepth == in.data[index].bracketDepth)
+                     && in.data[index].value == SUBTRACT
+                     && (in.data[index+1].type == NUMBER || in.data[index+1].type == OTHER)) {
+                       printf("-");
+                       break;
+                   }
+               } */
+            if(((index > 1) ? ((in.data[index-1].type == BRACKET && in.data[index-1].bracketDepth > in.data[index-2].bracketDepth)
+                              && in.data[index].value == SUBTRACT && (in.data[index+1].type == NUMBER || in.data[index+1].type == OTHER))
+                              : 0)
+            ? printf("-"), 1 : 0) break;
+
+            // Check whether to print a space before the operation
+            ((index != 0) ? ((in.data[index-1].type == NUMBER || in.data[index-1].type == OTHER || in.data[index-1].type == BRACKET)
+                             && in.data[index].value != EXPONENT
+                             && in.data[index].value != ROOT
+                             && in.data[index].value != FACTORIAL
+                             && in.data[index].value != EQUALS) : 0)
+            ? printf(" ") : 0;
+
+            switch((int)in.data[index].value) {
+                case ADD:       printf("+ ");     break;
+                case SUBTRACT:  printf("- ");     break;
+                case MULTIPLY:  printf("* ");     break;
+                case DIVIDE:    printf("/ ");     break;
+                case EXPONENT:  printf("^");      break;
+                case ROOT:      printf("root ");  break;
+                case EQUALS:    printf(" = ");    break;
+                case FACTORIAL: printf("! ");     break;
+            }
+            break;
+        case FUNCTION:
+            switch((int)in.data[index].value) {
+                case SQRT:       printf("sqrt ");      break;
+                case SINE:       printf("sine ");      break;
+                case COSINE:     printf("cosine ");    break;
+                case TANGENT:    printf("tangent ");   break;
+                case LOGARITHM:
+                    // Check if the logarithm has a base, if so print logarithm[base] [number], else print logarithm [number]
+                    ((index+2 < in.length) && in.data[index+1].type == NUMBER && in.data[index+2].type == NUMBER)
+                    ? printf("logarithm") : printf("logarithm ");
+                    break;
+                case NATURALLOG: printf("ln ");        break;
+                case GRAPH:      printf("graph ");     break;
+                case DESCRIBE:   printf("describe ");  break;
+            }
+            break;
+        case OTHER: printf("%c", (char)in.data[index].value); break;
+    }
+}
+
+void printArray(tokenArray array) {
+    int i;
+    for(i=0;i<array.length;i++) {
+        printToken(array, i);
+    }
+    printf("\n");
+}
+
+void printFullExpression(tokenArray* array) {
+    int foundNumber = 0, i;
+    if(array->length != 1 && printFull) {
+        // Now check that it's not just brackets and a single number
+        for(i=0;i<array->length;i++) {
+            if(array->data[i].type == BRACKET) continue;
+            if(array->data[i].type == NUMBER) { if(foundNumber) { foundNumber = 2; break; } else foundNumber = 1; continue; }
+            foundNumber = 2;
+            break;
+        }
+        if(foundNumber != 2) return;
+
+        printf("= "); printArray(*array);
+    }
 }
 
 int addFunction(tokenArray* array) {
@@ -257,6 +368,9 @@ int checkForFunctionCall(tokenArray* array) {
             // Get function arguments
             while(i < array->length && array->data[i].type != BRACKET) {
                 if(array->data[i].type == NUMBER) arguments[argumentsLen++] = array->data[i++].value;
+                // Handle negative arguments
+                else if(array->data[i].type == OPERATION && array->data[i].value == SUBTRACT
+                     && array->data[i+1].type == NUMBER) { arguments[argumentsLen++] = -array->data[i+1].value; i+=2; }
                 else {
                     inputError = 1;
                     strcpy(errorMessage, "Non-number argument in function call");
@@ -310,6 +424,9 @@ int checkForFunctionCall(tokenArray* array) {
                         // Set the bracket depth correctly
                         array->data[functionStart+1+j].bracketDepth += array->data[functionStart].bracketDepth;
                     }
+
+                    printFullExpression(array);
+
                     i = functionStart;
                     break;
                 }

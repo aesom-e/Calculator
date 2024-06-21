@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 #include "lexer.h"
 #include "customFunctions.h"
 
@@ -45,7 +46,7 @@ int validateArray(tokenArray* array) {
         }
     }
 
-    // No equal signs allowed (this is after function declaration is checked for)
+    // No equals sins allowed (this is after function declaration is checked for)
     for(i=0;i<array->length;i++) {
         if(array->data[i].type == OPERATION
         && array->data[i].value == EQUALS) {
