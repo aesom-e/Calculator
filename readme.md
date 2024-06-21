@@ -14,6 +14,7 @@ $
 ```
 
 You may input expressions next to the $ and an evaluated answer will return
+
 ```text
 $ 4
 = 4.000000
@@ -30,7 +31,7 @@ $ 16!
 ### Named values
 
 The evaluator includes three named values \
-Those are: pi, euler, and ans which is equal to the previous answer
+Those are: pi, euler (euler's number), and ans (equal to the previous answer)
 
 ```text
 $ pi
@@ -48,6 +49,7 @@ $ ans
 ### Built-in Functions
 
 The evaluator supports simple expressions as well as some functions
+
 ```text
 $ log 4
 = 0.602060
