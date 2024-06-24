@@ -7,7 +7,12 @@
 
 char* takeInput() {
     char* ret = malloc(MAXLENGTH);
-    printf("$%c", -1); // -1 to print a non-breaking space
+    #ifdef _WIN32
+        printf("$%c", -1); // -1 to print a non-breaking space
+    #endif
+    #ifdef linux
+        printf("$ "); // Linux allows trailing spaces before an input, Windows does not
+    #endif
     fgets(ret, MAXLENGTH-1, stdin);
     return ret;
 }
@@ -36,7 +41,7 @@ int main(int argc, char** argv) {
     }
 
     // Run a single expression from the command line
-    if(!flags.full && !flags.fileToLoad) {
+    if(!flags.full && !flags.fileToLoad && argc > 1) {
         char* math = malloc(MAXLENGTH);
         math[0] = 0;
 
