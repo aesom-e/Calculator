@@ -69,6 +69,10 @@ $ cos 2
 = -0.416147
 $ tangent 3
 = -0.142547
+$ radToDec 1
+= 57.295780
+$ decToRad 1
+= 0.017453
 ```
 
 ### Custom Functions

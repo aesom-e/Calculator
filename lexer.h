@@ -11,10 +11,13 @@ double ans = 0;
 
 tokenArray lex(char* line) {
 
-    if(strcmp(line, "exit\n") == 0) exit(0);
-
     tokenArray ret = {0};
     int len = (int)strlen(line), i, bracketIndex = 0;
+
+    // Turn all characters to their lowercase version for parsing
+    for(i=0;i<len;i++) line[i] = tolower(line[i]);
+
+    if(strcmp(line, "exit\n") == 0) exit(0);
 
     for(i=0;i<len;i++) {
         if(isspace(line[i]) || line[i] == ',') continue;
@@ -111,6 +114,14 @@ tokenArray lex(char* line) {
             i += 7;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = DESCRIBE;
+        } else if(strncmp(&line[i], "dectorad", 8) == 0) {
+            i += 7;
+            ret.data[ret.length].type = FUNCTION;
+            ret.data[ret.length].value = DECTORAD;
+        } else if(strncmp(&line[i], "radtodec", 8) == 0) {
+            i += 7;
+            ret.data[ret.length].type = FUNCTION;
+            ret.data[ret.length].value = RADTODEC;
         } else {
             ret.data[ret.length].type = OTHER;
             ret.data[ret.length].value = line[i];

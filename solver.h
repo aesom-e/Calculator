@@ -35,10 +35,10 @@ int solveEquation(tokenArray* array, int index) {
 
     if(array->data[index].type == FUNCTION) {
         switch((int)array->data[index].value) {
-            case SQRT:       solution = sqrt(array->data[index+1].value);   break;
-            case SINE:       solution = sin(array->data[index+1].value);    break;
-            case COSINE:     solution = cos(array->data[index+1].value);    break;
-            case TANGENT:    solution = tan(array->data[index+1].value);    break;
+            case SQRT:       solution = sqrt(array->data[index+1].value);     break;
+            case SINE:       solution = sin(array->data[index+1].value);      break;
+            case COSINE:     solution = cos(array->data[index+1].value);      break;
+            case TANGENT:    solution = tan(array->data[index+1].value);      break;
             case LOGARITHM:
                 // Allows the user to take the logarithm of an arbitrary base
                 if(array->length >= index+2 && array->data[index+2].type == NUMBER) {
@@ -49,7 +49,9 @@ int solveEquation(tokenArray* array, int index) {
                 }
                 else solution = log10(array->data[index+1].value);
                 break;
-            case NATURALLOG: solution = log(array->data[index+1].value);    break;
+            case NATURALLOG: solution = log(array->data[index+1].value);      break;
+            case RADTODEC:   solution = array->data[index+1].value * (180/M_PI); break;
+            case DECTORAD:   solution = array->data[index+1].value * (M_PI/180); break;
         }
     } else {
         switch((int)array->data[index+1].value) {
@@ -75,7 +77,7 @@ int solveEquation(tokenArray* array, int index) {
     return 0;
 }
 
-// Order of operations: Brackets, functionList, exponents, multiply/divide, add/subtract
+// Order of operations: Custom functions, brackets, builtin functions, root, factorials, exponents, multiply/divide, add/subtract
 double solve(tokenArray* array) {
     noPrint = 0;
 
@@ -90,7 +92,7 @@ double solve(tokenArray* array) {
                 continue;
             case 1:
                 if(array->data[i].type == BRACKET
-                && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
+                   && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
                 continue;
             case 2:
                 if(array->data[i].type == OTHER) step++;
@@ -98,11 +100,11 @@ double solve(tokenArray* array) {
                 continue;
             case 3:
                 if(array->data[i].type == BRACKET
-                && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
+                   && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
                 continue;
             case 4:
                 if(array->data[i].type == OPERATION
-                && array->data[i].value == EQUALS) step++;
+                   && array->data[i].value == EQUALS) step++;
                 else i = MAXLENGTH + 1;
                 continue;
             case 5:

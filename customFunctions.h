@@ -40,7 +40,9 @@ typedef enum {
     LOGARITHM,
     NATURALLOG,
     GRAPH,
-    DESCRIBE
+    DESCRIBE,
+    RADTODEC,
+    DECTORAD
 } functionType;
 
 typedef struct {
@@ -184,6 +186,8 @@ void printToken(tokenArray in, int index) {
                 case NATURALLOG: printf("ln ");        break;
                 case GRAPH:      printf("graph ");     break;
                 case DESCRIBE:   printf("describe ");  break;
+                case RADTODEC:   printf("radToDec ");  break;
+                case DECTORAD:   printf("decToRad ");  break;
             }
             break;
         case OTHER: printf("%c", (char)in.data[index].value); break;
