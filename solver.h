@@ -50,8 +50,8 @@ int solveEquation(tokenArray* array, int index) {
                 else solution = log10(array->data[index+1].value);
                 break;
             case NATURALLOG: solution = log(array->data[index+1].value);      break;
-            case RADTODEC:   solution = array->data[index+1].value * (180/M_PI); break;
-            case DECTORAD:   solution = array->data[index+1].value * (M_PI/180); break;
+            case RADTODEG: solution = array->data[index + 1].value * (180 / M_PI); break;
+            case DEGTORAD: solution = array->data[index + 1].value * (M_PI / 180); break;
         }
     } else {
         switch((int)array->data[index+1].value) {
