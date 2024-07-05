@@ -126,7 +126,7 @@ quadPos(a, b, c) defined
 $ describe quadNeg
 quadNeg(a, b, c) = ((-b) - sqrt (b^2 - 4ac)) / 2a
 $ describe quadPos
-quadPos(a, b, c) = ((-b) + sqrt (b^2 - 4ac)) / 2
+quadPos(a, b, c) = ((-b) + sqrt (b^2 - 4ac)) / 2a
 ```
 
 ## Command-line arguments
@@ -148,7 +148,7 @@ For example, we can create a customFunctions.math file and populate it as such:
 
 ```text
 quadNeg(a, b, c) = ((-b) - sqrt(b^2 - 4ac)) / 2a
-quadPos(a, b, c) = ((-b) + sqrt(b^2 - 4ac)) / 2
+quadPos(a, b, c) = ((-b) + sqrt(b^2 - 4ac)) / 2a
 compoundInterest(p, r, t) = (p(1 + (r / 100))^t) - p
 ```
 
