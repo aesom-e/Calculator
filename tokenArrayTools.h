@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "lexer.h"
-#include "customFunctions.h"
+#include "base.h"
 
 #ifndef TOKENARRAYTOOLS_H
 #define TOKENARRAYTOOLS_H

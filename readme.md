@@ -69,9 +69,9 @@ $ cos 2
 = -0.416147
 $ tangent 3
 = -0.142547
-$ radToDec 1
+$ radToDeg 1
 = 57.295780
-$ decToRad 1
+$ degToRad 1
 = 0.017453
 ```
 
@@ -116,7 +116,7 @@ $ functionTwo(30)
 = 164.316767
 ```
 
-Finally, with functions, you can ask the evaluator to describe them
+Finally, with custom functions, you can ask the evaluator to describe them
 
 ```text
 $ quadNeg(a, b, c) = ((-b) - sqrt(b^2 - 4ac)) / 2a
@@ -126,7 +126,57 @@ quadPos(a, b, c) defined
 $ describe quadNeg
 quadNeg(a, b, c) = ((-b) - sqrt (b^2 - 4ac)) / 2a
 $ describe quadPos
-quadPos(a, b, c) = ((-b) + sqrt (b^2 - 4ac)) / 2a
+quadPos(a, b, c) = ((-b) + sqrt (b^2 - 4ac)) / 2
+```
+
+### Graphing
+
+The evaluator has graphing capabilities with custom functions \
+The graph keyword allows the user to graph their functions \
+Note that the graph may be inaccurate due to the limitations of the IEEE 754 floating point numbers
+
+Here is how to graph a custom function \
+At the moment, graphing is only available on Windows
+
+```text
+$ f(x) = cosine x
+f(x) defined
+$ graph f
+Graphing f(x)
+```
+
+This spawns a window that contains a cosine wave from (-9.6, -5.4) to (9.6, 5.4)
+
+Navigating around the graph is very simple \
+To pan around the graph, click and drag \
+Use your mouse's scroll wheel to zoom into and out of sections of the graph
+
+The options menu found in the top right corner of the window contains the following options
+```text
+Set Ranges                    - Pops up a window which allows
+                                you to set the range of the viewport into the graph
+Reset Ranges                  - Resets the range of the viewport to
+                                (-9.6, -5.4), (9.6, 5.4)
+Enable/Disable Axes           - Toggles showing axis lines in red at x=0 and y=0
+Enable/Disable Showing Coords - Toggles showing the coordinates of the
+                                mouse cursor in the window's title
+Enable/Disable Limits         - Toggles enforcing limits on panning and zooming
+```
+
+On top of those options, the graphing window contains the following keybinds
+```text
+Set Ranges            - Ctrl R
+Reset Range           - Ctrl Shift R
+Toggle Axes           - Ctrl X
+Toggle Showing Coords - Ctrl C
+Toggle Limits         - Ctrl L
+Zoom In               - Ctrl +
+Zoom Out              - Ctrl -
+Zoom In  (Large zoom) - Ctrl Shift +
+Zoom Out (Large zoom) - Ctrl Shift -
+Pan                   - WASD & Arrow keys
+Large zoom            - Ctrl Scroll wheel
+Redraw Graph          - Space
 ```
 
 ## Command-line arguments
@@ -148,7 +198,7 @@ For example, we can create a customFunctions.math file and populate it as such:
 
 ```text
 quadNeg(a, b, c) = ((-b) - sqrt(b^2 - 4ac)) / 2a
-quadPos(a, b, c) = ((-b) + sqrt(b^2 - 4ac)) / 2a
+quadPos(a, b, c) = ((-b) + sqrt(b^2 - 4ac)) / 2
 compoundInterest(p, r, t) = (p(1 + (r / 100))^t) - p
 ```
 
@@ -172,4 +222,17 @@ $ compoundInterest(800032 3.18 37)
 = ((800032 (3.184450)) - 800032)
 = ((2547661.530434) - 800032)
 = 1747629.530434
+```
+
+Note that we can also toggle printing full expressions by using
+```text
+$ printFull
+= 1
+$ cos sine 90
+= cosine 0.893997
+= 0.626301
+$ printFull
+= 0
+$ cos sine 90
+= 0.626301
 ```
