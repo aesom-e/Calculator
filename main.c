@@ -4,7 +4,6 @@
 #include "solver.h"
 #include "tokenArrayTools.h"
 #include "inputFlags.h"
-#include "doubleTools.h"
 
 char* takeInput() {
     char* ret = malloc(MAXLENGTH);
@@ -32,7 +31,6 @@ int main(int argc, char** argv) {
             createFunctionArray(); // This is required for solve to work
             while(fgets(math, MAXLENGTH-1, startFile) != NULL) {
                 tokenArray line = lex(math);
-                if(blankRet) continue;
                 math = malloc(MAXLENGTH); // lex frees math
                 solve(&line);
             }
@@ -51,12 +49,11 @@ int main(int argc, char** argv) {
         for(i=1;i<argc;i++) { strcat(math, argv[i]); strcat(math, " "); }
 
         tokenArray line = lex(math);
-        if(blankRet) exit(0);
         createFunctionArray(); // This is required for solve to work
         solve(&line);
         if(noPrint) return 1;
         if(inputError) { printf("Error: %s\n", errorMessage); return 2; }
-        else { char* ansStr = compactDouble(ans); printf("%s\n", ansStr); free(ansStr); }
+        else printf("%lf\n", ans);
 
         // lex frees math, so we don't need to free it here
         return 0;
@@ -66,10 +63,9 @@ int main(int argc, char** argv) {
     createFunctionArray();
     while(1) {
         tokenArray line = lex(takeInput());
-        if(blankRet) continue;
         solve(&line);
         if(noPrint) continue;
         if(inputError) printf("Error: %s\n", errorMessage);
-        else { char* ansStr = compactDouble(ans); printf("= %s\n", ansStr); free(ansStr); }
+        else printf("= %lf\n", ans);
     }
 }

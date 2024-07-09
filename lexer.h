@@ -2,17 +2,14 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <math.h>
-#include "base.h"
-#include "help.h"
+#include "customFunctions.h"
 
 #ifndef LEXER_H
 #define LEXER_H
 
 double ans = 0;
-unsigned char blankRet = 0;
 
 tokenArray lex(char* line) {
-    blankRet = 0;
 
     tokenArray ret = {0};
     int len = (int)strlen(line), i, bracketIndex = 0;
@@ -21,9 +18,6 @@ tokenArray lex(char* line) {
     for(i=0;i<len;i++) line[i] = tolower(line[i]);
 
     if(strcmp(line, "exit\n") == 0) exit(0);
-    if(strcmp(line, "help\n") == 0) { printHelp(); blankRet = 1; return ret; }
-    if(strcmp(line, "printfull\n") == 0) { printFull = !printFull; printf("= %u\n", printFull);
-                                           blankRet = 1; return ret; }
 
     for(i=0;i<len;i++) {
         if(isspace(line[i]) || line[i] == ',') continue;
@@ -84,21 +78,6 @@ tokenArray lex(char* line) {
             i += 3;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = SQRT;
-        } else if(strncmp(&line[i], "arcsin", 6) == 0 || strncmp(&line[i], "arcsine", 7) == 0) {
-            if(strncmp(&line[i], "arcsine", 7) == 0) i++;
-            i += 5;
-            ret.data[ret.length].type = FUNCTION;
-            ret.data[ret.length].value = ARCSINE;
-        } else if(strncmp(&line[i], "arccos", 6) == 0 || strncmp(&line[i], "arccosine", 9) == 0) {
-            if(strncmp(&line[i], "arccosine", 9) == 0) i += 3;
-            i += 5;
-            ret.data[ret.length].type = FUNCTION;
-            ret.data[ret.length].value = ARCCOSINE;
-        } else if(strncmp(&line[i], "arctan", 6) == 0 || strncmp(&line[i], "arctangent", 10) == 0) {
-            if(strncmp(&line[i], "arctangent", 10) == 0) i += 4;
-            i += 5;
-            ret.data[ret.length].type = FUNCTION;
-            ret.data[ret.length].value = ARCTANGENT;
         } else if(strncmp(&line[i], "sin", 3) == 0 || strncmp(&line[i], "sine", 4) == 0) {
             if(strncmp(&line[i], "sine", 4) == 0) i++;
             i += 2;
@@ -143,11 +122,6 @@ tokenArray lex(char* line) {
             i += 7;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = RADTODEG;
-        } else if(strncmp(&line[i], "abs", 3) == 0 || strncmp(&line[i], "absolute", 8) == 0) {
-            if(strncmp(&line[i], "absolute", 8) == 0) i += 5;
-            i += 2;
-            ret.data[ret.length].type = FUNCTION;
-            ret.data[ret.length].value = ABSOLUTEFN;
         } else {
             ret.data[ret.length].type = OTHER;
             ret.data[ret.length].value = line[i];

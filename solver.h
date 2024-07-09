@@ -1,14 +1,81 @@
+#include <math.h>
 #include "lexer.h"
 #include "tokenArrayTools.h"
-#include "base.h"
+#include "customFunctions.h"
 #include "graphWin.h"
 #include "graphLinux.h"
-#include "graphSolver.h"
 
 #ifndef SOLVER_H
 #define SOLVER_H
 
 unsigned char noPrint = 0;
+
+// Solves a single equation.
+int solveEquation(tokenArray* array, int index) {
+
+    // Verify correct number of parameters
+    if(!((array->length >= index+2
+    && array->data[index].type != FUNCTION)
+    || (array->length >= index+1 &&
+    (array->data[index].type == FUNCTION
+    || (array->data[index+1].type == OPERATION
+    && array->data[index+1].value == FACTORIAL))))) return 1;
+
+    // This is a mess, but what it does it verify that what is passed in is in the correct format
+    // NUMBER OPERATION NUMBER, FUNCTION NUMBER or NUMBER FACTORIAL
+    if(!((array->data[index].type == NUMBER
+    && array->data[index+1].type == OPERATION
+    && array->data[index+2].type == NUMBER) ||
+    (array->data[index].type == FUNCTION
+    && array->data[index+1].type == NUMBER) ||
+    (array->data[index+1].type == OPERATION
+    && array->data[index+1].value == FACTORIAL))) return 2;
+
+    double solution = 0;
+
+    if(array->data[index].type == FUNCTION) {
+        switch((int)array->data[index].value) {
+            case SQRT:       solution = sqrt(array->data[index+1].value);     break;
+            case SINE:       solution = sin(array->data[index+1].value);      break;
+            case COSINE:     solution = cos(array->data[index+1].value);      break;
+            case TANGENT:    solution = tan(array->data[index+1].value);      break;
+            case LOGARITHM:
+                // Allows the user to take the logarithm of an arbitrary base
+                if(array->length >= index+2 && array->data[index+2].type == NUMBER) {
+                    array->data[index].value = log(array->data[index+2].value) / log(array->data[index+1].value);
+                    shiftLeft(array, index+1, 2);
+                    array->data[index].type = NUMBER;
+                    return 0;
+                }
+                else solution = log10(array->data[index+1].value);
+                break;
+            case NATURALLOG: solution = log(array->data[index+1].value);      break;
+            case RADTODEG: solution = array->data[index + 1].value * (180 / M_PI); break;
+            case DEGTORAD: solution = array->data[index + 1].value * (M_PI / 180); break;
+        }
+    } else {
+        switch((int)array->data[index+1].value) {
+            case ADD:       solution = array->data[index].value + array->data[index+2].value;           break;
+            case SUBTRACT:  solution = array->data[index].value - array->data[index+2].value;           break;
+            case MULTIPLY:  solution = array->data[index].value * array->data[index+2].value;           break;
+            case DIVIDE:
+                if(array->data[index+2].value == 0) { solution = 0; break; } // Avoid a division by 0
+                solution = array->data[index].value / array->data[index+2].value;
+                break;
+            case EXPONENT:  solution = pow(array->data[index].value, array->data[index+2].value);     break;
+            case ROOT:      solution = pow(array->data[index+2].value, 1 / array->data[index].value); break;
+            case FACTORIAL: solution = tgamma(array->data[index].value + 1); break;
+        }
+    }
+
+    array->data[index].value = solution;
+    if(array->data[index].type == FUNCTION
+    || (array->data[index+1].type == OPERATION
+    && array->data[index+1].value == FACTORIAL)) shiftLeft(array, index+1, 1);
+    else shiftLeft(array, index+1, 2);
+    array->data[index].type = NUMBER;
+    return 0;
+}
 
 // Order of operations: Custom functions, brackets, builtin functions, root, factorials, exponents, multiply/divide, add/subtract
 double solve(tokenArray* array) {
@@ -72,7 +139,26 @@ double solve(tokenArray* array) {
                 printFunction(functionList->functions[i]);
                 printf("\n");
 
-                graph(functionList->functions[i]);
+                double data[graphWidth];
+
+                double lastAns = ans;
+                tokenArray* math = malloc(sizeof(tokenArray));
+                double* argument = malloc(sizeof(double));
+                function functionToRun = functionList->functions[i];
+                int index = 0;
+
+                for(i=-(graphWidth/2);i<graphWidth/2;i++) {
+                    *math = tokenArrayDup(&functionToRun.math, 0);
+                    *argument = (double)i;
+                    runFunction(math, functionToRun, argument);
+                    data[index++] = solve(math);
+                }
+                ans = lastAns;
+
+                free(math);
+                free(argument);
+
+                graph(functionToRun, data);
 
                 noPrint = 1;
                 return 1;
@@ -103,7 +189,7 @@ double solve(tokenArray* array) {
     }
 
     // Check for function calls, if an error occurs, return 0
-    if(!checkForFunctionCall(array)) { error = 1; return 0; }
+    if(!checkForFunctionCall(array)) return 0;
 
     // Handle cases where the user wants to add to the previous answer
     if(array->data[0].type == OPERATION) {
@@ -112,7 +198,7 @@ double solve(tokenArray* array) {
         array->data[0].value = ans;
     }
 
-    if(!validateArray(array)) { error = 1; return 0; }
+    if(!validateArray(array)) return 0;
 
     int index, found, foundOnce;
     short bracketDepth;
