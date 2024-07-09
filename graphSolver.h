@@ -1,118 +1,95 @@
+#include <math.h>
 #include "lexer.h"
 #include "tokenArrayTools.h"
 #include "base.h"
-#include "graphWin.h"
-#include "graphLinux.h"
-#include "graphSolver.h"
 
-#ifndef SOLVER_H
-#define SOLVER_H
+#ifndef GRAPHSOLVER_H
+#define GRAPHSOLVER_H
 
-unsigned char noPrint = 0;
+unsigned char error = 0;
 
-// Order of operations: Custom functions, brackets, builtin functions, root, factorials, exponents, multiply/divide, add/subtract
-double solve(tokenArray* array) {
-    noPrint = 0;
+// Solves a single equation.
+int solveEquation(tokenArray* array, int index) {
 
-    // Check for function declaration
-    // OTHER ( OTHER ) = MATH
-    int i, step = 0, newFuncId, lastFuncId = functionList->len;
-    for(i=0;i<array->length;i++) {
-        switch(step) {
-            case 0:
-                if(array->data[i].type == OTHER) step++;
-                else i = MAXLENGTH + 1; // Essentially break out of the for loop
-                continue;
-            case 1:
-                if(array->data[i].type == BRACKET
-                   && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
-                continue;
-            case 2:
-                if(array->data[i].type == OTHER) step++;
-                else i = MAXLENGTH + 1;
-                continue;
-            case 3:
-                if(array->data[i].type == BRACKET
-                   && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
-                continue;
-            case 4:
-                if(array->data[i].type == OPERATION
-                   && array->data[i].value == EQUALS) step++;
-                else i = MAXLENGTH + 1;
-                continue;
-            case 5:
-                newFuncId = addFunction(array);
-                function newFunction = functionList->functions[newFuncId];
-                printFunction(newFunction);
-                newFuncId >= lastFuncId ? printf("defined\n") : printf("redefined\n");
-                noPrint = 1;
-                return 1;
-        }
-    }
+    // Verify correct number of parameters
+    if(!((array->length >= index+2
+          && array->data[index].type != FUNCTION)
+         || (array->length >= index+1 &&
+             (array->data[index].type == FUNCTION
+              || (array->data[index+1].type == OPERATION
+                  && array->data[index+1].value == FACTORIAL))))) return 1;
 
-    // Handle graphing functions
-    if(array->data[0].type == FUNCTION
-       && array->data[0].value == GRAPH
-       && array->data[1].type == OTHER) {
-        i = 1;
-        char name[32] = {0}, nameLen = 0;
-        while(array->data[i].type == OTHER) name[nameLen++] = (char)array->data[i++].value;
-        for(i=0;i<functionList->len;i++)
-            if(strncmp(functionList->functions[i].name, name, functionList->functions[i].nameLen) == 0) {
-                noPrint = 1;
+    // This is a mess, but what it does it verify that what is passed in is in the correct format
+    // NUMBER OPERATION NUMBER, FUNCTION NUMBER or NUMBER FACTORIAL
+    if(!((array->data[index].type == NUMBER
+          && array->data[index+1].type == OPERATION
+          && array->data[index+2].type == NUMBER) ||
+         (array->data[index].type == FUNCTION
+          && array->data[index+1].type == NUMBER) ||
+         (array->data[index+1].type == OPERATION
+          && array->data[index+1].value == FACTORIAL))) return 2;
 
-                if(functionList->functions[i].argumentsLen != 1) {
-                    printf("Error: ");
-                    printFunction(functionList->functions[i]);
-                    printf("contains more than one parameter\n");
-                    return 1;
+    double solution = 0;
+
+    if(array->data[index].type == FUNCTION) {
+        switch((int)array->data[index].value) {
+            case SQRT:       solution = sqrt(array->data[index+1].value);     break;
+            case SINE:       solution = sin(array->data[index+1].value);      break;
+            case COSINE:     solution = cos(array->data[index+1].value);      break;
+            case TANGENT:    solution = tan(array->data[index+1].value);      break;
+            case ARCSINE:    solution = asin(array->data[index+1].value);     break;
+            case ARCCOSINE:  solution = acos(array->data[index+1].value);     break;
+            case ARCTANGENT: solution = atan(array->data[index+1].value);     break;
+            case LOGARITHM:
+                // Allows the user to take the logarithm of an arbitrary base
+                if(array->length >= index+2 && array->data[index+2].type == NUMBER) {
+                    array->data[index].value = log(array->data[index+2].value) / log(array->data[index+1].value);
+                    shiftLeft(array, index+1, 2);
+                    array->data[index].type = NUMBER;
+                    return 0;
                 }
-
-                printf("Graphing ");
-                printFunction(functionList->functions[i]);
-                printf("\n");
-
-                graph(functionList->functions[i]);
-
-                noPrint = 1;
-                return 1;
-            }
-    }
-
-    // Check for a describe call
-    if(array->data[0].type == FUNCTION && array->data[0].value == DESCRIBE) {
-        noPrint = 1;
-        shiftLeft(array, 0, 1);
-
-        char name[32] = {0}, nameLen = 0;
-        for(i=0;i<array->length;i++) name[nameLen++] = (char)array->data[i].value;
-
-        for(i=0;i<functionList->len;i++) {
-            if(strncmp(name, functionList->functions[i].name, nameLen) == 0) {
-                printFunction(functionList->functions[i]);
-                printf("= ");
-                printArray(functionList->functions[i].math);
-
-                return 1;
-            }
+                else solution = log10(array->data[index+1].value);
+                break;
+            case NATURALLOG:   solution = log(array->data[index+1].value);           break;
+            case RADTODEG:     solution = array->data[index+1].value * (180 / M_PI);    break;
+            case DEGTORAD:     solution = array->data[index+1].value * (M_PI / 180);    break;
+            case ABSOLUTEFN:   solution = fabs(array->data[index+1].value);          break;
         }
-
-        printf("Error: Function %s not found", name);
-
-        return 0;
+    } else {
+        switch((int)array->data[index+1].value) {
+            case ADD:       solution = array->data[index].value + array->data[index+2].value;           break;
+            case SUBTRACT:  solution = array->data[index].value - array->data[index+2].value;           break;
+            case MULTIPLY:  solution = array->data[index].value * array->data[index+2].value;           break;
+            case DIVIDE:
+                if(array->data[index+2].value == 0) { solution = 0; break; } // Avoid a division by 0
+                solution = array->data[index].value / array->data[index+2].value;
+                break;
+            case EXPONENT:  solution = pow(array->data[index].value, array->data[index+2].value);     break;
+            case ROOT:      solution = pow(array->data[index+2].value, 1 / array->data[index].value); break;
+            case FACTORIAL: solution = tgamma(array->data[index].value + 1);                                break;
+        }
     }
 
-    // Check for function calls, if an error occurs, return 0
-    if(!checkForFunctionCall(array)) { error = 1; return 0; }
+    array->data[index].value = solution;
+    if(array->data[index].type == FUNCTION
+       || (array->data[index+1].type == OPERATION
+           && array->data[index+1].value == FACTORIAL)) shiftLeft(array, index+1, 1);
+    else shiftLeft(array, index+1, 2);
+    array->data[index].type = NUMBER;
+    return 0;
+}
 
-    // Handle cases where the user wants to add to the previous answer
-    if(array->data[0].type == OPERATION) {
-        shiftRight(array, 0, 1);
-        array->data[0].type = NUMBER;
-        array->data[0].value = ans;
-    }
+// Like the solve function in solver.h, but doesn't include calls to graphing headers nor printing of solutions
+double graphSolve(tokenArray* array) {
+    error = 0;
+    noPrintFull = 1;
 
-    if(!validateArray(array)) { error = 1; return 0; }
+    // Check for function calls, if an error occurs, return
+    if(!checkForFunctionCall(array)) { noPrintFull = 0; error = 1; return 0; }
+    noPrintFull = 0;
+
+    if(!validateArray(array)) {
+        error = 1; return 0; }
 
     int index, found, foundOnce;
     short bracketDepth;
@@ -174,7 +151,6 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index+2].value *= -1;
                     shiftLeft(array, index+1, 1);
-                    printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -189,7 +165,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -205,7 +180,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -221,7 +195,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -237,7 +210,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -255,7 +227,6 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index].value *= array->data[index+1].value;
                     shiftLeft(array, index+1, 1);
-                    printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -271,7 +242,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -288,7 +258,6 @@ double solve(tokenArray* array) {
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
-                    printFullExpression(array);
                     break;
                 }
             }
@@ -299,7 +268,6 @@ double solve(tokenArray* array) {
         if(foundOnce) bracketDepth++;
     }
 
-    ans = array->data[0].value;
     return array->data[0].value;
 }
 
