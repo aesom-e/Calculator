@@ -4,11 +4,11 @@ IDR_MENU MENU
 BEGIN
     POPUP "&Options"
     BEGIN
-        MENUITEM "&Set Ranges", ID_OPTIONS_SETRANGES
-        MENUITEM "&Reset Ranges", ID_OPTIONS_RESETRANGES
-        MENUITEM "Toggle &Axes", ID_OPTIONS_TOGGLEAXES
-        MENUITEM "Toggle Showing &Coords", ID_OPTIONS_TOGGLECOORDS
-        MENUITEM "Toggle &Limits", ID_OPTIONS_TOGGLELIMITS
+        MENUITEM "&Set Ranges (Ctrl+R)", ID_OPTIONS_SETRANGES
+        MENUITEM "&Reset Ranges (Ctrl+Shift+R)", ID_OPTIONS_RESETRANGES
+        MENUITEM "Toggle A&xes (Ctrl+X)", ID_OPTIONS_TOGGLEAXES
+        MENUITEM "Toggle Showing &Coords (Ctrl+C)", ID_OPTIONS_TOGGLECOORDS
+        MENUITEM "Toggle &Limits (Ctrl+L)", ID_OPTIONS_TOGGLELIMITS
     END
 END
 

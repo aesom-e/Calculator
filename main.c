@@ -22,6 +22,8 @@ int main(int argc, char** argv) {
     inputFlags flags = getInputFlags(argc, argv);
 
     if(flags.full) printFull = 1;
+    if(flags.scientificNotation) scientificNotation = 1;
+
     if(flags.fileToLoad) {
         FILE* startFile = fopen(flags.fileToLoad, "r");
         if(!startFile) {

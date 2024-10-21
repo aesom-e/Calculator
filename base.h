@@ -45,7 +45,8 @@ typedef enum {
     DESCRIBE,
     RADTODEG,
     DEGTORAD,
-    ABSOLUTEFN
+    ABSOLUTEFN,
+    ROUND
 } functionType;
 
 typedef struct {
@@ -198,6 +199,7 @@ void printToken(tokenArray in, int index) {
                 case RADTODEG:   printf("radToDeg ");   break;
                 case DEGTORAD:   printf("degToRad ");   break;
                 case ABSOLUTEFN: printf("abs ");        break;
+                case ROUND:      printf("round ");      break;
             }
             break;
         case OTHER: printf("%c", (char)in.data[index].value); break;

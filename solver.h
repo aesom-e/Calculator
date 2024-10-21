@@ -58,7 +58,8 @@ double solve(tokenArray* array) {
         char name[32] = {0}, nameLen = 0;
         while(array->data[i].type == OTHER) name[nameLen++] = (char)array->data[i++].value;
         for(i=0;i<functionList->len;i++)
-            if(strncmp(functionList->functions[i].name, name, functionList->functions[i].nameLen) == 0) {
+            if(strncmp(functionList->functions[i].name, name, functionList->functions[i].nameLen) == 0
+            && strlen(functionList->functions[i].name) == nameLen) {
                 noPrint = 1;
 
                 if(functionList->functions[i].argumentsLen != 1) {
@@ -264,7 +265,7 @@ double solve(tokenArray* array) {
         // Handle /, *
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == MULTIPLY || array->data[index+1].value == DIVIDE)) {
@@ -281,7 +282,7 @@ double solve(tokenArray* array) {
         // Handle + and -
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == ADD || array->data[index+1].value == SUBTRACT)) {

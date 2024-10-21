@@ -9,4 +9,3 @@
 #define IDC_XMAX 1002
 #define IDC_YMIN 1003
 #define IDC_YMAX 1004
-#define IDC_COORDS_STATIC 1005

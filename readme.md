@@ -17,15 +17,15 @@ You may input expressions next to the $ and an evaluated answer will return
 
 ```text
 $ 4
-= 4.000000
+= 4
 $ 8 * 8
-= 64.000000
+= 64
 $ (4)(-3)
-= -12.000000
+= -12
 $ 8^4
-= 4096.000000
+= 4096
 $ 16!
-= 20922789888000.000000
+= 20922789888000
 ```
 
 ### Named values
@@ -52,11 +52,11 @@ The evaluator supports simple expressions as well as some functions
 
 ```text
 $ log 4
-= 0.602060
+= 0.60206
 $ log 2 10   (Explanation: Log base 2 of 10)
 = 3.321928
 $ (log 2) 10 (Explanation: (log base 10 of 2) * 10)
-= 3.010300
+= 3.0103
 $ ln 3
 = 1.098612
 $ sqrt 7
@@ -70,7 +70,7 @@ $ cos 2
 $ tangent 3
 = -0.142547
 $ radToDeg 1
-= 57.295780
+= 57.29578
 $ degToRad 1
 = 0.017453
 ```
@@ -89,7 +89,7 @@ $ f(4)
 $ g(x, y, z) = x+2y+3z
 g(x, y, z) defined
 $ g(8, 199, 20)
-= 466.000000
+= 466
 ```
 
 Functions can be redefined after their initial definition if it so requires
@@ -102,7 +102,7 @@ $ f(7)
 $ g(x y z) = x^y^z
 g(x, y, z) redefined
 $ g(3 3 3)
-= 7625597484987.000000
+= 7625597484987
 ```
 
 Functions can also include other functions
@@ -147,6 +147,16 @@ Graphing f(x)
 
 This spawns a window that contains a cosine wave from (-9.6, -5.4) to (9.6, 5.4)
 
+Graphing can also be done as x = function(y) \
+To do this, the parameter of the function must be named 'y' \
+
+```text
+$ g(y) = y^3
+g(y) defined
+$ graph g
+Graphing g(y)
+```
+
 Navigating around the graph is very simple \
 To pan around the graph, click and drag \
 Use your mouse's scroll wheel to zoom into and out of sections of the graph
@@ -186,7 +196,7 @@ The limitation to this is that the expression can not include custom functions
 
 ```text
 MathEvaluator "(7(4)!)/(sine(4!))"
--185.516800
+-185.5168
 MathEvaluator "sine cosine pi" 
 -0.841471
 ```
@@ -224,15 +234,36 @@ $ compoundInterest(800032 3.18 37)
 = 1747629.530434
 ```
 
-Note that we can also toggle printing full expressions by using
+**-sn** makes the program print numbers in scientific notation
+
 ```text
+$ 100
+= [1*10^3]
+$ cosine -pi
+= [-1*10^0]
+$ 0.004
+= [4*10^-3]
+```
+
+Note that we can also change settings in the evaluator by using
+```text
+$ printFull = 1
+printFull set
 $ printFull
 = 1
 $ cos sine 90
 = cosine 0.893997
 = 0.626301
+$ printFull = 0
+printFull set
 $ printFull
 = 0
 $ cos sine 90
 = 0.626301
+$ sciNotation
+= 0
+$ sciNotation = 1
+sciNotation set
+$ cos sine 90
+= [6.26013*10^-1]
 ```

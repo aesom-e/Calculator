@@ -1,0 +1,24 @@
+Check that everything works and push to GitHub
+-> Update 1.3.1 (Fixes to the Graphing Update)
+
+
+Allow for arrow keys to scroll through inputs on Linux (Windows terminal auto does this)
+
+Graphing multiple functions at once (in a single window)
+-> Different colours for each line
+
+Move drawing to SDL
+-> Allows for cross-platform use
+
+Fix the graph stuttering when drawing
+-> I think this will be easier with SDL than with Windows
+
+Fix the mysterious lines when graphing
+
+GitHub
+-> Update 1.4 (Cross-Platform Update)
+
+Switch the entire calculator over to a decimal datatype
+
+GitHub
+-> Update 1.5 (Decimal Update)

@@ -20,10 +20,24 @@ tokenArray lex(char* line) {
     // Turn all characters to their lowercase version for parsing
     for(i=0;i<len;i++) line[i] = tolower(line[i]);
 
-    if(strcmp(line, "exit\n") == 0) exit(0);
-    if(strcmp(line, "help\n") == 0) { printHelp(); blankRet = 1; return ret; }
-    if(strcmp(line, "printfull\n") == 0) { printFull = !printFull; printf("= %u\n", printFull);
-                                           blankRet = 1; return ret; }
+    // Remove the '\n' from the end of the line if exists
+    if(line[len-1] == '\n') line[--len] = 0;
+
+    if(strcmp(line, "exit") == 0) exit(0);
+    if(strcmp(line, "help") == 0) { printHelp(); blankRet = 1; return ret; }
+
+    // Beautiful
+    if(strcmp(line, "printfull") == 0) { printf("= %u\n", printFull); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull = 1") == 0) { printFull = 1; printf("printFull set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull=1") == 0) { printFull = 1; printf("printFull set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull = 0") == 0) { printFull = 0; printf("printFull set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull=0") == 0) { printFull = 0; printf("printFull set\n"); blankRet = 1; return ret; }
+
+    if(strcmp(line, "scinotation") == 0) { printf("= %u\n", scientificNotation); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation = 1") == 0) { scientificNotation = 1; printf("sciNotation set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation=1") == 0) { scientificNotation = 1; printf("sciNotation set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation = 0") == 0) { scientificNotation = 0; printf("sciNotation set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation=0") == 0) { scientificNotation = 0; printf("sciNotation set\n"); blankRet = 1; return ret; }
 
     for(i=0;i<len;i++) {
         if(isspace(line[i]) || line[i] == ',') continue;
@@ -148,6 +162,10 @@ tokenArray lex(char* line) {
             i += 2;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = ABSOLUTEFN;
+        } else if(strncmp(&line[i], "round", 5) == 0) {
+            i += 4;
+            ret.data[ret.length].type = FUNCTION;
+            ret.data[ret.length].value = ROUND;
         } else {
             ret.data[ret.length].type = OTHER;
             ret.data[ret.length].value = line[i];

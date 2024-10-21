@@ -3,5 +3,6 @@
 #define ZOOM_FACTOR 1.1
 #define ZOOM_FACTOR_LARGE 1.5
 #define PAN_STEP 0.025
+#define PAN_STEP_LARGE 0.25
 #define LIMIT_MAX 100000
 #define LIMIT_MIN 0.00001

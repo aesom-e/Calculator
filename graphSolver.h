@@ -13,7 +13,7 @@ int solveEquation(tokenArray* array, int index) {
 
     // Verify correct number of parameters
     if(!((array->length >= index+2
-          && array->data[index].type != FUNCTION)
+       && (array->data[index].type == FUNCTION ? array->data[index+1].value != ROUND : 1))
          || (array->length >= index+1 &&
              (array->data[index].type == FUNCTION
               || (array->data[index+1].type == OPERATION
@@ -54,6 +54,19 @@ int solveEquation(tokenArray* array, int index) {
             case RADTODEG:     solution = array->data[index+1].value * (180 / M_PI);    break;
             case DEGTORAD:     solution = array->data[index+1].value * (M_PI / 180);    break;
             case ABSOLUTEFN:   solution = fabs(array->data[index+1].value);          break;
+            case ROUND: {
+                if(array->data[index+2].value >= 0) {
+                    char num[256], format[16];
+                    sprintf(format, "%%.%dlf", (int)array->data[index+2].value);
+                    sprintf(num, format, array->data[index+1].value);
+                    solution = atof(num);
+                    break;
+                }
+                long long roundNum = (long long)pow(10, -(int)array->data[index+2].value);
+                int roundUp = ((long long)array->data[index+1].value % (roundNum / 10) >= (roundNum / 2));
+                solution = (double)((long long)array->data[index+1].value - (long long)array->data[index+1].value % roundNum);
+                break;
+            }
         }
     } else {
         switch((int)array->data[index+1].value) {
@@ -70,8 +83,9 @@ int solveEquation(tokenArray* array, int index) {
         }
     }
 
+    int isRound = array->data[index].value == ROUND;
     array->data[index].value = solution;
-    if(array->data[index].type == FUNCTION
+    if((array->data[index].type == FUNCTION && !isRound)
        || (array->data[index+1].type == OPERATION
            && array->data[index+1].value == FACTORIAL)) shiftLeft(array, index+1, 1);
     else shiftLeft(array, index+1, 2);
@@ -88,8 +102,7 @@ double graphSolve(tokenArray* array) {
     if(!checkForFunctionCall(array)) { noPrintFull = 0; error = 1; return 0; }
     noPrintFull = 0;
 
-    if(!validateArray(array)) {
-        error = 1; return 0; }
+    if(!validateArray(array)) { error = 1; return 0; }
 
     int index, found, foundOnce;
     short bracketDepth;
@@ -100,7 +113,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like (-2) turning it into -2
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-4;index>=0;index--) {
+            for(index=0;index<=array->length-4;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == BRACKET
                    && array->data[index].bracketDepth == array->data[index+1].bracketDepth // index is opening bracket
@@ -122,7 +135,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like (2) turning it into 2
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == BRACKET
                    && array->data[index].bracketDepth == array->data[index+1].bracketDepth // array->data[index] is opening bracket
@@ -142,7 +155,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like sine -pi turning it into sine -3.1415926535...
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type != NUMBER
                    && array->data[index+1].type == OPERATION && array->data[index+1].value == SUBTRACT
@@ -159,9 +172,10 @@ double graphSolve(tokenArray* array) {
         // Handle functionList
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-2;index>=0;index--) {
+            for(index=0;index<=array->length-2;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == FUNCTION) {
+                    if(array->data[index].value == ROUND) if(index <= array->length-2) break;
                     foundOnce = 1;
                     found = 1;
                     solveEquation(array, index);
@@ -174,7 +188,7 @@ double graphSolve(tokenArray* array) {
         // Handle root
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == ROOT) {
                     foundOnce = 1;
@@ -189,7 +203,7 @@ double graphSolve(tokenArray* array) {
         // Handle factorials
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-2;index>=0;index--) {
+            for(index=0;index<=array->length-2;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == FACTORIAL) {
                     foundOnce = 1;
@@ -204,7 +218,7 @@ double graphSolve(tokenArray* array) {
         // Handle ^
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == EXPONENT) {
                     foundOnce = 1;
@@ -219,7 +233,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like 2pi turning it into 6.28318...
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-2;index>=0;index--) {
+            for(index=0;index<=array->length-2;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == NUMBER
                    && array->data[index+1].type == NUMBER) {
@@ -235,7 +249,7 @@ double graphSolve(tokenArray* array) {
         // Handle /, *
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == MULTIPLY || array->data[index+1].value == DIVIDE)) {
@@ -251,7 +265,7 @@ double graphSolve(tokenArray* array) {
         // Handle + and -
         while(array->length > 1) {
             found = 0;
-            for(index=array->length-3;index>=0;index--) {
+            for(index=0;index<=array->length-3;index++) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == ADD || array->data[index+1].value == SUBTRACT)) {

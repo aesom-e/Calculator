@@ -1,6 +1,6 @@
 #ifdef linux
 #include <stdio.h>
-#include "customFunctions.h"
+#include "base.h"
 #include "constants.h"
 
 #ifndef GRAPHLINUX_H

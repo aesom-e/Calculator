@@ -5,6 +5,10 @@
 
 void printHelp() {
     printf(""
+           "Settings:\n"
+           "printFull          | Prints the current setting for printing full solutions\n"
+           "printFull = x      | Sets printFull to x {x = 0,1}\n\n"
+
            "Constants:\n"
            "pi                 | ~= 3.141593\n"
            "euler              | ~= 2.718282\n"

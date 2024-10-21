@@ -15,7 +15,7 @@
 #define GRAPHWIN_H
 
 function graphFunction;
-HWND graphHwnd;
+HWND graphHwnd = NULL;
 HMENU optionsHmenu;
 
 double xRange[2] = {-9.6, 9.6}, dragXRange[2];
@@ -89,15 +89,15 @@ void resetRanges() {
 
 void updateOptionsMenu() {
     ModifyMenu(optionsHmenu, ID_OPTIONS_TOGGLEAXES, MF_BYCOMMAND | MF_STRING, ID_OPTIONS_TOGGLEAXES,
-               showAxes ? "Disable &Axes" : "Enable &Axes");
+               showAxes ? "Disable A&xes (Ctrl+X)" : "Enable A&xes (Ctrl+X)");
 
 
     ModifyMenu(optionsHmenu, ID_OPTIONS_TOGGLECOORDS, MF_BYCOMMAND | MF_STRING, ID_OPTIONS_TOGGLECOORDS,
-               showCoords ? "Disable Showing &Coords" : "Enable Showing &Coords");
+               showCoords ? "Disable Showing &Coords (Ctrl+C)" : "Enable Showing &Coords (Ctrl+C)");
 
 
     ModifyMenu(optionsHmenu, ID_OPTIONS_TOGGLELIMITS, MF_BYCOMMAND | MF_STRING, ID_OPTIONS_TOGGLELIMITS,
-               limitsEnabled ? "Disable &Limits" : "Enable &Limits");
+               limitsEnabled ? "Disable &Limits (Ctrl+L)" : "Enable &Limits (Ctrl+L)");
 }
 
 void zoom(int zoomIn, double xValue, double yValue, double xRatio, double yRatio, int large) {
@@ -179,16 +179,34 @@ INT_PTR CALLBACK SetRangesDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 
         case WM_COMMAND:
             if(LOWORD(wParam) == IDOK) {
-                char buffer[64];
+                char buffer[256];
 
-                GetDlgItemText(hDlg, IDC_XMIN, buffer, sizeof(buffer));
-                xRange[0] = atof(buffer);
-                GetDlgItemText(hDlg, IDC_XMAX, buffer, sizeof(buffer));
-                xRange[1] = atof(buffer);
-                GetDlgItemText(hDlg, IDC_YMIN, buffer, sizeof(buffer));
-                yRange[0] = atof(buffer);
-                GetDlgItemText(hDlg, IDC_YMAX, buffer, sizeof(buffer));
-                yRange[1] = atof(buffer);
+                if(scientificNotation) {
+                    double num;
+                    int x;
+
+                    GetDlgItemText(hDlg, IDC_XMIN, buffer, sizeof(buffer));
+                    sscanf(buffer, "[%lf*10^%d]", &num, &x);
+                    xRange[0] = num * pow(10, x);
+                    GetDlgItemText(hDlg, IDC_XMAX, buffer, sizeof(buffer));
+                    sscanf(buffer, "[%lf*10^%d]", &num, &x);
+                    xRange[1] = num * pow(10, x);
+                    GetDlgItemText(hDlg, IDC_YMIN, buffer, sizeof(buffer));
+                    sscanf(buffer, "[%lf*10^%d]", &num, &x);
+                    yRange[0] = num * pow(10, x);
+                    GetDlgItemText(hDlg, IDC_YMAX, buffer, sizeof(buffer));
+                    sscanf(buffer, "[%lf*10^%d]", &num, &x);
+                    yRange[1] = num * pow(10, x);
+                } else {
+                    GetDlgItemText(hDlg, IDC_XMIN, buffer, sizeof(buffer));
+                    xRange[0] = atof(buffer);
+                    GetDlgItemText(hDlg, IDC_XMAX, buffer, sizeof(buffer));
+                    xRange[1] = atof(buffer);
+                    GetDlgItemText(hDlg, IDC_YMIN, buffer, sizeof(buffer));
+                    yRange[0] = atof(buffer);
+                    GetDlgItemText(hDlg, IDC_YMAX, buffer, sizeof(buffer));
+                    yRange[1] = atof(buffer);
+                }
 
                 if(xRange[0] >= xRange[1] || yRange[0] >= yRange[1]) resetRanges();
 
@@ -210,6 +228,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     switch(uMsg) {
         case WM_DESTROY:
             PostQuitMessage(0);
+            hwnd = NULL;
             return 0;
         case WM_COMMAND:
             switch(LOWORD(wParam)) {
@@ -356,23 +375,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     break;
                 case 'W':
                 case VK_UP:
-                    if(ctrlPressed || shiftPressed) break;
-                    pan(0, PAN_STEP, xRange, yRange);
+                    if(shiftPressed) break;
+                    pan(0, (ctrlPressed ? PAN_STEP_LARGE : PAN_STEP), xRange, yRange);
                     break;
                 case 'A':
                 case VK_LEFT:
-                    if(ctrlPressed || shiftPressed) break;
-                    pan(PAN_STEP, 0, xRange, yRange);
+                    if(shiftPressed) break;
+                    pan((ctrlPressed ? PAN_STEP_LARGE : PAN_STEP), 0, xRange, yRange);
                     break;
                 case 'S':
                 case VK_DOWN:
-                    if(ctrlPressed || shiftPressed) break;
-                    pan(0, -PAN_STEP, xRange, yRange);
+                    if(shiftPressed) break;
+                    pan(0, -(ctrlPressed ? PAN_STEP_LARGE : PAN_STEP), xRange, yRange);
                     break;
                 case 'D':
                 case VK_RIGHT:
-                    if(ctrlPressed || shiftPressed) break;
-                    pan(-PAN_STEP, 0, xRange, yRange);
+                    if(shiftPressed) break;
+                    pan(-(ctrlPressed ? PAN_STEP_LARGE : PAN_STEP), 0, xRange, yRange);
                     break;
                 case VK_SPACE:
                     InvalidateRect(graphHwnd, NULL, TRUE);
@@ -400,24 +419,46 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             int width = rect.right - rect.left;
             int height = rect.bottom - rect.top;
 
-            MoveToEx(hdc, 0, height / 2, NULL); // Center of window
-
             int i;
-            for(i=0;i<width;i++) {
+            // Check if the argument to the function is 'y', then graph as y = f(y), else x = f(<any>)
+            if(graphFunction.arguments[0] == 'y') {
+                for(i=0;i<height;i++) {
+                    double y = yRange[0] + (yRange[1] - yRange[0]) * i / height;
 
-                double x = xRange[0] + (xRange[1] - xRange[0]) * i / width;
+                    tokenArray math = {0};
+                    setupFunction(&math, graphFunction, &y);
 
-                tokenArray math = {0};
-                setupFunction(&math, graphFunction, &x);
+                    double x = graphSolve(&math);
+                    if(error) { printf("Error getting graph values\n"); exit(-1); }
 
-                double y = graphSolve(&math);
-                if(error) { printf("Error getting graph values\n"); exit(-1); }
+                    // Normalize x to the screen coordinates
+                    int screenX = (int)((x - xRange[0]) / (xRange[1] - xRange[0]) * width);
+                    int screenY = height - i;
 
-                // Normalize y to the screen coordinates
-                int screenX = i;
-                int screenY = height - (int)((y - yRange[0]) / (yRange[1] - yRange[0]) * height);
+                    // Move to the starting point if i == 0
+                    if(!i) MoveToEx(hdc, screenX, screenY, NULL);
 
-                LineTo(hdc, screenX, screenY);
+                    LineTo(hdc, screenX, screenY);
+                }
+            } else {
+                for(i=0;i<width;i++) {
+                    double x = xRange[0] + (xRange[1] - xRange[0]) * i / width;
+
+                    tokenArray math = {0};
+                    setupFunction(&math, graphFunction, &x);
+
+                    double y = graphSolve(&math);
+                    if(error) { printf("Error getting graph values\n"); exit(-1); }
+
+                    // Normalize y to the screen coordinates
+                    int screenX = i;
+                    int screenY = height - (int)((y - yRange[0]) / (yRange[1] - yRange[0]) * height);
+
+                    // Move to the starting point if i == 0
+                    if(!i) MoveToEx(hdc, screenX, screenY, NULL);
+
+                    LineTo(hdc, screenX, screenY);
+                }
             }
 
             SelectObject(hdc, hPenOld);
@@ -432,7 +473,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void graph(function functionIn) {
+void graphFunc(function functionIn) {
     graphFunction = functionIn;
 
     char className[256], *rangeNames[4];
@@ -487,6 +528,30 @@ void graph(function functionIn) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+}
+
+DWORD WINAPI graphThread(LPVOID param) {
+    function* functionIn = (function*)param;
+    graphFunc(*functionIn);
+    return 0;
+}
+
+void graph(function functionIn) {
+    // Close the window if it's open
+    if(graphHwnd) SendMessage(graphHwnd, WM_CLOSE, 0, 0);
+
+    // Create a thread for graphing
+    HANDLE hThread = CreateThread(
+            NULL,
+            0,
+            graphThread,
+            (LPVOID)&functionIn,
+            0,
+            NULL);
+
+    if(!hThread)
+        printf("Thread failed to create (%lu)\n", GetLastError());
+    else CloseHandle(hThread);
 }
 
 #endif
