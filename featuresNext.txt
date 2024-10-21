@@ -1,4 +1,0 @@
-Ability to use the function as an argument for another function in the base input
-
-Round function which would proplerly round functions
--> round(x, y) = x rounded to y decimal places {y >= 0}
