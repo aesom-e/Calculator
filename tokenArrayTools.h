@@ -35,8 +35,8 @@ int validateArray(tokenArray* array) {
             if(array->data[i].value == DIVIDE
                && array->data[i+1].value == 0
                && array->data[i+1].type == NUMBER) {
-                strcpy(errorMessage, "Expression includes a division by 0");
-                return 0;
+                // strcpy(errorMessage, "Expression includes a division by 0");
+                // return 0;
             }
             if(array->data[i+1].type != NUMBER && array->data[i+1].type != BRACKET && array->data[i+1].type != FUNCTION
             && array->data[i+1].type != OTHER) {

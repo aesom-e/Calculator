@@ -67,6 +67,8 @@ int solveEquation(tokenArray* array, int index) {
                 solution = (double)((long long)array->data[index+1].value - (long long)array->data[index+1].value % roundNum);
                 break;
             }
+            case SGN:          solution = ((array->data[index+1].value == 0) ? 0 :
+                                           ((array->data[index+1].value > 0) ? 1 : -1)); break;
         }
     } else {
         switch((int)array->data[index+1].value) {
@@ -74,7 +76,7 @@ int solveEquation(tokenArray* array, int index) {
             case SUBTRACT:  solution = array->data[index].value - array->data[index+2].value;           break;
             case MULTIPLY:  solution = array->data[index].value * array->data[index+2].value;           break;
             case DIVIDE:
-                if(array->data[index+2].value == 0) { solution = 0; break; } // Avoid a division by 0
+                if(array->data[index+2].value == 0) { solution = NAN; break; } // Avoid a division by 0
                 solution = array->data[index].value / array->data[index+2].value;
                 break;
             case EXPONENT:  solution = pow(array->data[index].value, array->data[index+2].value);     break;
@@ -110,10 +112,11 @@ double graphSolve(tokenArray* array) {
     // Loop from the max bracketDepth to 0 decrementing when no more math can possibly be done
     for(bracketDepth=(short)getMaxBracketDepth(array);bracketDepth>=0;bracketDepth--) {
         foundOnce = 0;
+
         // Handle cases like (-2) turning it into -2
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-4;index++) {
+            for(index=array->length-4;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == BRACKET
                    && array->data[index].bracketDepth == array->data[index+1].bracketDepth // index is opening bracket
@@ -135,7 +138,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like (2) turning it into 2
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-3;index++) {
+            for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == BRACKET
                    && array->data[index].bracketDepth == array->data[index+1].bracketDepth // array->data[index] is opening bracket
@@ -155,7 +158,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like sine -pi turning it into sine -3.1415926535...
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-3;index++) {
+            for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type != NUMBER
                    && array->data[index+1].type == OPERATION && array->data[index+1].value == SUBTRACT
@@ -172,13 +175,13 @@ double graphSolve(tokenArray* array) {
         // Handle functionList
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-2;index++) {
+            for(index=array->length-2;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == FUNCTION) {
-                    if(array->data[index].value == ROUND) if(index <= array->length-2) break;
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -188,12 +191,13 @@ double graphSolve(tokenArray* array) {
         // Handle root
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-3;index++) {
+            for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == ROOT) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -203,12 +207,13 @@ double graphSolve(tokenArray* array) {
         // Handle factorials
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-2;index++) {
+            for(index=array->length-2;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == FACTORIAL) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -218,12 +223,13 @@ double graphSolve(tokenArray* array) {
         // Handle ^
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-3;index++) {
+            for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == EXPONENT) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -233,7 +239,7 @@ double graphSolve(tokenArray* array) {
         // Handle cases like 2pi turning it into 6.28318...
         while(array->length > 1) {
             found = 0;
-            for(index=0;index<=array->length-2;index++) {
+            for(index=array->length-2;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == NUMBER
                    && array->data[index+1].type == NUMBER) {
@@ -253,9 +259,10 @@ double graphSolve(tokenArray* array) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == MULTIPLY || array->data[index+1].value == DIVIDE)) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -269,9 +276,10 @@ double graphSolve(tokenArray* array) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == ADD || array->data[index+1].value == SUBTRACT)) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
                     break;
                 }
             }
@@ -281,6 +289,8 @@ double graphSolve(tokenArray* array) {
         // Keep bracketDepth the same, it will be decremented by the for loop
         if(foundOnce) bracketDepth++;
     }
+
+    if(array->length > 1) return NAN;
 
     return array->data[0].value;
 }

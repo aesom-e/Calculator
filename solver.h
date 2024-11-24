@@ -1,8 +1,7 @@
 #include "lexer.h"
 #include "tokenArrayTools.h"
 #include "base.h"
-#include "graphWin.h"
-#include "graphLinux.h"
+#include "graph.h"
 #include "graphSolver.h"
 
 #ifndef SOLVER_H
@@ -21,27 +20,33 @@ double solve(tokenArray* array) {
         switch(step) {
             case 0:
                 if(array->data[i].type == OTHER) step++;
-                else i = MAXLENGTH + 1; // Essentially break out of the for loop
+                else i = MAX_INPUT_LENGTH + 1; // Essentially break out of the for loop
                 continue;
             case 1:
                 if(array->data[i].type == BRACKET
-                   && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
+                && array->data[i].bracketDepth > array->data[i-1].bracketDepth) step++;
                 continue;
             case 2:
                 if(array->data[i].type == OTHER) step++;
-                else i = MAXLENGTH + 1;
+                else i = MAX_INPUT_LENGTH + 1;
                 continue;
             case 3:
                 if(array->data[i].type == BRACKET
-                   && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
+                && array->data[i].bracketDepth < array->data[i-1].bracketDepth) step++;
                 continue;
             case 4:
                 if(array->data[i].type == OPERATION
-                   && array->data[i].value == EQUALS) step++;
-                else i = MAXLENGTH + 1;
+                && array->data[i].value == EQUALS) step++;
+                else i = MAX_INPUT_LENGTH + 1;
                 continue;
             case 5:
                 newFuncId = addFunction(array);
+                if(newFuncId == -1) {
+                    printf("Error: Max functions already declared\n");
+                    noPrint = 1;
+                    return 1;
+                }
+
                 function newFunction = functionList->functions[newFuncId];
                 printFunction(newFunction);
                 newFuncId >= lastFuncId ? printf("defined\n") : printf("redefined\n");
@@ -54,30 +59,60 @@ double solve(tokenArray* array) {
     if(array->data[0].type == FUNCTION
        && array->data[0].value == GRAPH
        && array->data[1].type == OTHER) {
-        i = 1;
-        char name[32] = {0}, nameLen = 0;
-        while(array->data[i].type == OTHER) name[nameLen++] = (char)array->data[i++].value;
-        for(i=0;i<functionList->len;i++)
-            if(strncmp(functionList->functions[i].name, name, functionList->functions[i].nameLen) == 0
-            && strlen(functionList->functions[i].name) == nameLen) {
-                noPrint = 1;
+        noPrint = 1;
 
-                if(functionList->functions[i].argumentsLen != 1) {
-                    printf("Error: ");
-                    printFunction(functionList->functions[i]);
-                    printf("contains more than one parameter\n");
-                    return 1;
+        char name[32] = {0}, nameLen = 0, numFunctions = 0;
+        function graphFunctions[GRAPH_MAX_FUNCTIONS] = {0};
+
+        i = 1;
+        while((array->data[i].type == OTHER || array->data[i].type == SEPARATOR)
+        && numFunctions < GRAPH_MAX_FUNCTIONS) {
+            if(array->data[i].type == OTHER && nameLen < 32) name[nameLen++] = (char)array->data[i++].value;
+
+            if(array->data[i].type == SEPARATOR || i == array->length) {
+                name[nameLen] = 0;
+
+                // Search for the function with the specified name
+                int j, found = 0;
+                for(j=0;j<functionList->len&&!found;j++) {
+                    if(strncmp(functionList->functions[j].name, name, functionList->functions[j].nameLen) == 0
+                    && strlen(functionList->functions[j].name) == nameLen) {
+                        if(functionList->functions[j].argumentsLen != 1) {
+                            printf("Error: ");
+                            printFunction(functionList->functions[j]);
+                            printf("contains more than one parameter\n");
+                            return 1;
+                        }
+
+                        graphFunctions[numFunctions++] = functionList->functions[j];
+                        found = 1;
+                    }
                 }
 
-                printf("Graphing ");
-                printFunction(functionList->functions[i]);
-                printf("\n");
-
-                graph(functionList->functions[i]);
-
-                noPrint = 1;
-                return 1;
+                // Reset name
+                for(j=0;j<nameLen;j++) name[j] = 0;
+                nameLen = 0;
             }
+
+            i++;
+        }
+
+        // Make sure that at least 1 function was found
+        if(!numFunctions) {
+            printf("Error: No functions found\n");
+            return 1;
+        }
+
+        // Print what is being graphed
+        printf("Graphing ");
+        for(i=0;i<numFunctions;i++) {
+            printFunction(graphFunctions[i]);
+            if(i != numFunctions-1) printf("\b; ");
+        }
+        printf("\n");
+
+        graph(graphFunctions, numFunctions);
+        return 1;
     }
 
     // Check for a describe call
@@ -121,6 +156,7 @@ double solve(tokenArray* array) {
     // Loop from the max bracketDepth to 0 decrementing when no more math can possibly be done
     for(bracketDepth=(short)getMaxBracketDepth(array);bracketDepth>=0;bracketDepth--) {
         foundOnce = 0;
+
         // Handle cases like (-2) turning it into -2
         while(array->length > 1) {
             found = 0;
@@ -175,7 +211,7 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index+2].value *= -1;
                     shiftLeft(array, index+1, 1);
-                    printFullExpression(array);
+                    if(found) printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -187,10 +223,11 @@ double solve(tokenArray* array) {
             for(index=array->length-2;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index].type == FUNCTION) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -203,10 +240,11 @@ double solve(tokenArray* array) {
             for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == ROOT) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -219,10 +257,11 @@ double solve(tokenArray* array) {
             for(index=array->length-2;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == FACTORIAL) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -235,10 +274,11 @@ double solve(tokenArray* array) {
             for(index=array->length-3;index>=0;index--) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION && array->data[index+1].value == EXPONENT) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -256,7 +296,7 @@ double solve(tokenArray* array) {
                     found = 1;
                     array->data[index].value *= array->data[index+1].value;
                     shiftLeft(array, index+1, 1);
-                    printFullExpression(array);
+                    if(found) printFullExpression(array);
                 }
             }
             if(!found) break;
@@ -269,10 +309,11 @@ double solve(tokenArray* array) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == MULTIPLY || array->data[index+1].value == DIVIDE)) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -286,10 +327,11 @@ double solve(tokenArray* array) {
                 if(array->data[index].bracketDepth != bracketDepth) continue;
                 if(array->data[index+1].type == OPERATION
                    &&(array->data[index+1].value == ADD || array->data[index+1].value == SUBTRACT)) {
-                    foundOnce = 1;
-                    found = 1;
+                    int prevLen = array->length;
                     solveEquation(array, index);
-                    printFullExpression(array);
+                    found = prevLen != array->length;
+                    foundOnce = foundOnce || found;
+                    if(found) printFullExpression(array);
                     break;
                 }
             }
@@ -298,6 +340,12 @@ double solve(tokenArray* array) {
 
         // Keep bracketDepth the same, it will be decremented by the for loop
         if(foundOnce) bracketDepth++;
+    }
+
+    // Check if the loop was broken before an answer was found, and return NaN
+    if(array->length > 1) {
+        ans = NAN;
+        return NAN;
     }
 
     ans = array->data[0].value;

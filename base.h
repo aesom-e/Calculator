@@ -17,6 +17,7 @@ typedef enum {
     NUMBER,
     OPERATION,
     FUNCTION,
+    SEPARATOR,
     OTHER
 } tokenType;
 
@@ -46,7 +47,8 @@ typedef enum {
     RADTODEG,
     DEGTORAD,
     ABSOLUTEFN,
-    ROUND
+    ROUND,
+    SGN
 } functionType;
 
 typedef struct {
@@ -56,7 +58,7 @@ typedef struct {
 } token;
 
 typedef struct {
-    token data[MAXLENGTH];
+    token data[MAX_INPUT_LENGTH];
     int length;
 } tokenArray;
 
@@ -76,10 +78,21 @@ typedef struct {
 functionArray functionList = NULL;
 
 void createFunctionArray() {
-    if(functionList != NULL) return;
+    if(functionList) return;
     functionList = malloc(sizeof(functionArray));
-    functionList->functions = malloc(sizeof(function) * MAXFUNCTIONS);
+    functionList->functions = malloc(sizeof(function) * MAX_FUNCTIONS);
     functionList->len = 0;
+}
+
+void destroyFunctionArray() {
+    if(!functionList) return;
+    free(functionList->functions);
+    free(functionList);
+}
+
+void quit(int exitCode) {
+    destroyFunctionArray();
+    exit(exitCode);
 }
 
 tokenArray tokenArrayDup(tokenArray* array, int start) {
@@ -102,7 +115,7 @@ void shiftLeft(tokenArray* array, int index, int amount) {
 }
 
 void shiftRight(tokenArray* array, int index, int amount) {
-    if(amount <= 0 || index < 0 || array->length + amount >= MAXLENGTH) return;
+    if(amount <= 0 || index < 0 || array->length + amount >= MAX_INPUT_LENGTH) return;
 
     int i;
     for(i=array->length-1;i>=index;i--) array->data[i + amount] = array->data[i];
@@ -191,7 +204,7 @@ void printToken(tokenArray in, int index) {
                 case LOGARITHM:
                     // Check if the logarithm has a base, if so print logarithm[base] [number], else print logarithm [number]
                     ((index+2 < in.length) && in.data[index+1].type == NUMBER && in.data[index+2].type == NUMBER)
-                    ? printf("logarithm") : printf("logarithm ");
+                    ? printf("log") : printf("log ");
                     break;
                 case NATURALLOG: printf("ln ");         break;
                 case GRAPH:      printf("graph ");      break;
@@ -200,6 +213,7 @@ void printToken(tokenArray in, int index) {
                 case DEGTORAD:   printf("degToRad ");   break;
                 case ABSOLUTEFN: printf("abs ");        break;
                 case ROUND:      printf("round ");      break;
+                case SGN:        printf("sgn ");        break;
             }
             break;
         case OTHER: printf("%c", (char)in.data[index].value); break;
@@ -253,6 +267,7 @@ int addFunction(tokenArray* array) {
         }
     }
 
+    if(functionList->len == MAX_FUNCTIONS-1) return -1;
     functionList->functions[functionList->len++] = newFunction;
     return functionList->len-1;
 }
@@ -367,7 +382,7 @@ int checkForFunctionCall(tokenArray* array) {
             double arguments[16];
 
             // Get function name
-            while(i < array->length && array->data[i].type == OTHER)
+            while(i < array->length && array->data[i].type == OTHER && nameLen < 31)
                 name[nameLen++] = (char)array->data[i++].value;
             name[nameLen] = 0;
 

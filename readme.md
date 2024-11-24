@@ -4,6 +4,10 @@
 
 This is a project I've been working on which evaluates simple mathematical expressions
 
+## Credits
+
+This project uses [SDL](https://github.com/libsdl-org/SDL) for window management
+
 ## Usage
 
 The program features a simple command line interface
@@ -26,6 +30,22 @@ $ 8^4
 = 4096
 $ 16!
 = 20922789888000
+```
+
+### Commands
+
+The evaluator also accepts the following commands
+
+
+This prints a help dialog containing helpful information on the program
+```text
+$ help
+```
+
+These clear the terminal screen
+```text
+$ clear
+$ cls
 ```
 
 ### Named values
@@ -73,6 +93,16 @@ $ radToDeg 1
 = 57.29578
 $ degToRad 1
 = 0.017453
+$ round pi 3 (Explanation: Rounding pi to 3 decimal places)
+= 3.142
+$ round (radToDeg 1) (-1) (Explanation: Rounding ~57.29578 to -1 decimal places, or to the nearest 10)
+= 50
+$ sgn 1000
+= 1
+$ sgn 0
+= 0
+$ sgn -5000
+= -1
 ```
 
 ### Custom Functions
@@ -135,8 +165,7 @@ The evaluator has graphing capabilities with custom functions \
 The graph keyword allows the user to graph their functions \
 Note that the graph may be inaccurate due to the limitations of the IEEE 754 floating point numbers
 
-Here is how to graph a custom function \
-At the moment, graphing is only available on Windows
+Here is how to graph a custom function
 
 ```text
 $ f(x) = cosine x
@@ -157,36 +186,34 @@ $ graph g
 Graphing g(y)
 ```
 
+As of version 1.4, the evaluator also supports graphing multiple functions at once, \
+as well as opening multiple graphs simultaneously
+
+```text
+$ graph f
+Graphing f(x)
+$ graph g
+Graphing g(y)
+$ graph f; g
+Graphing f(x); g(y)
+```
+
+
 Navigating around the graph is very simple \
 To pan around the graph, click and drag \
 Use your mouse's scroll wheel to zoom into and out of sections of the graph
 
-The options menu found in the top right corner of the window contains the following options
+As well as having mouse-based commands, the graphing window contains the following keybinds
 ```text
-Set Ranges                    - Pops up a window which allows
-                                you to set the range of the viewport into the graph
-Reset Ranges                  - Resets the range of the viewport to
-                                (-9.6, -5.4), (9.6, 5.4)
-Enable/Disable Axes           - Toggles showing axis lines in red at x=0 and y=0
-Enable/Disable Showing Coords - Toggles showing the coordinates of the
-                                mouse cursor in the window's title
-Enable/Disable Limits         - Toggles enforcing limits on panning and zooming
-```
-
-On top of those options, the graphing window contains the following keybinds
-```text
-Set Ranges            - Ctrl R
 Reset Range           - Ctrl Shift R
 Toggle Axes           - Ctrl X
 Toggle Showing Coords - Ctrl C
-Toggle Limits         - Ctrl L
 Zoom In               - Ctrl +
 Zoom Out              - Ctrl -
 Zoom In  (Large zoom) - Ctrl Shift +
 Zoom Out (Large zoom) - Ctrl Shift -
 Pan                   - WASD & Arrow keys
 Large zoom            - Ctrl Scroll wheel
-Redraw Graph          - Space
 ```
 
 ## Command-line arguments

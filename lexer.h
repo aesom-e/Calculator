@@ -4,6 +4,7 @@
 #include <math.h>
 #include "base.h"
 #include "help.h"
+#include "terminal.h"
 
 #ifndef LEXER_H
 #define LEXER_H
@@ -23,27 +24,34 @@ tokenArray lex(char* line) {
     // Remove the '\n' from the end of the line if exists
     if(line[len-1] == '\n') line[--len] = 0;
 
-    if(strcmp(line, "exit") == 0) exit(0);
-    if(strcmp(line, "help") == 0) { printHelp(); blankRet = 1; return ret; }
+    if(strcmp(line, "exit") == 0)  quit(0);
+    if(strcmp(line, "help") == 0)  { printHelp(); blankRet = 1; return ret; }
+    if(strcmp(line, "cls") == 0
+    || strcmp(line, "clear") == 0) { clearTerminal(); blankRet = 1; return ret; }
 
     // Beautiful
-    if(strcmp(line, "printfull") == 0) { printf("= %u\n", printFull); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull") == 0)     { printf("= %u\n", printFull); blankRet = 1; return ret; }
     if(strcmp(line, "printfull = 1") == 0) { printFull = 1; printf("printFull set\n"); blankRet = 1; return ret; }
-    if(strcmp(line, "printfull=1") == 0) { printFull = 1; printf("printFull set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull=1") == 0)   { printFull = 1; printf("printFull set\n"); blankRet = 1; return ret; }
     if(strcmp(line, "printfull = 0") == 0) { printFull = 0; printf("printFull set\n"); blankRet = 1; return ret; }
-    if(strcmp(line, "printfull=0") == 0) { printFull = 0; printf("printFull set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "printfull=0") == 0)   { printFull = 0; printf("printFull set\n"); blankRet = 1; return ret; }
 
-    if(strcmp(line, "scinotation") == 0) { printf("= %u\n", scientificNotation); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation") == 0)     { printf("= %u\n", scientificNotation); blankRet = 1; return ret; }
     if(strcmp(line, "scinotation = 1") == 0) { scientificNotation = 1; printf("sciNotation set\n"); blankRet = 1; return ret; }
-    if(strcmp(line, "scinotation=1") == 0) { scientificNotation = 1; printf("sciNotation set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation=1") == 0)   { scientificNotation = 1; printf("sciNotation set\n"); blankRet = 1; return ret; }
     if(strcmp(line, "scinotation = 0") == 0) { scientificNotation = 0; printf("sciNotation set\n"); blankRet = 1; return ret; }
-    if(strcmp(line, "scinotation=0") == 0) { scientificNotation = 0; printf("sciNotation set\n"); blankRet = 1; return ret; }
+    if(strcmp(line, "scinotation=0") == 0)   { scientificNotation = 0; printf("sciNotation set\n"); blankRet = 1; return ret; }
 
     for(i=0;i<len;i++) {
         if(isspace(line[i]) || line[i] == ',') continue;
 
-        if(line[i] == '(' || line[i] == ')') {
-            bracketIndex += (line[i] == '(')?1:-1;
+        if(line[i] == ';') {
+            ret.data[ret.length].type = SEPARATOR;
+        } else if(line[i] == '(' || line[i] == ')') {
+            bracketIndex += (line[i] == '(') ? 1 : -1;
+            ret.data[ret.length].type = BRACKET;
+        } else if(line[i] == '[' || line[i] == ']') {
+            bracketIndex += (line[i] == '[') ? 1 : -1;
             ret.data[ret.length].type = BRACKET;
         } else if(isdigit(line[i]) || line[i] == '.') {
             char number[32] = {0};
@@ -166,6 +174,11 @@ tokenArray lex(char* line) {
             i += 4;
             ret.data[ret.length].type = FUNCTION;
             ret.data[ret.length].value = ROUND;
+        } else if(strncmp(&line[i], "sgn", 3) == 0) {
+            if(strncmp(&line[i], "sign", 4) == 0) i++;
+            i += 2;
+            ret.data[ret.length].type = FUNCTION;
+            ret.data[ret.length].value = SGN;
         } else {
             ret.data[ret.length].type = OTHER;
             ret.data[ret.length].value = line[i];
